@@ -52,7 +52,7 @@
         .coupon-box { display: flex; gap: 10px; } .coupon-box input { flex: 2; margin: 0;} .coupon-box button { flex: 1; margin: 0; background: #333; }
         .success-text { color: green; font-weight: bold; font-size: 14px; margin-top: 5px; display: block;}
         
-        /* تصميم زر التثبيت الجديد PWA */
+        /* تصميم زر التثبيت PWA */
         #install-banner { background: var(--primary-gold); color: white; text-align: center; padding: 12px; position: sticky; top: 73px; z-index: 999; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 10px;}
         #install-banner:hover { background: var(--dark-gold); }
     </style>
@@ -61,9 +61,7 @@
 
     <div class="header"><img src="https://i.imgur.com/OqQuD0p.png" alt="شعار نعاون">Na'awn Delivery</div>
     
-    <div id="install-banner" class="hidden" onclick="installApp()">
-        📲 اضغط هنا لتثبيت التطبيق على الشاشة الرئيسية
-    </div>
+    <div id="install-banner" class="hidden"></div>
 
     <div class="container">
         <div id="customer-login" class="card section">
@@ -168,7 +166,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // ⚠️ ضع رابط SCRIPT_URL الخاص بك هنا
+        // ⚠️ تأكد من وضع رابط جوجل شيت الصحيح الخاص بك هنا:
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz9ebdSjWwrilYlTthEoDswQ1nPViORsrterQhwPnV0LmA7x3mnMNX4uB3eTc6XJilo/exec'; 
         const ADMIN_PHONE = "93516953";
         let watchId; let adminRefreshInterval; 
@@ -179,30 +177,44 @@
         const driverAudio = new Audio('https://actions.google.com/sounds/v1/communications/incoming_phone_call.ogg');
         let lastNewOrdersCount = 0; let lastAssignedOrdersCount = 0; let isAudioAllowed = false;
 
-        // ================= كود تثبيت التطبيق (PWA) =================
+        // ================= كود تثبيت التطبيق (PWA الذكي الشامل) =================
         let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('install-banner').classList.remove('hidden');
-        });
+        const installBanner = document.getElementById('install-banner');
 
-        function installApp() {
-            document.getElementById('install-banner').classList.add('hidden');
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') { console.log('User accepted the install prompt'); } 
-                    else { console.log('User dismissed the install prompt'); }
-                    deferredPrompt = null;
-                });
+        // فحص إذا كان الجهاز آيفون/آيباد
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isStandalone = ('standalone' in window.navigator) && (window.navigator.standalone);
+
+        if (isIOS && !isStandalone) {
+            // إذا كان آيفون وغير مثبت، نعرض دليلاً للمستخدم
+            installBanner.innerHTML = '📲 لمستخدمي آيفون: اضغط على زر المشاركة بالأسفل ⍗ ثم اختار "إضافة للشاشة الرئيسية ➕"';
+            installBanner.classList.remove('hidden');
+            installBanner.onclick = () => { 
+                alert('عزيزي العميل، في متصفح سفاري: اضغط على أيقونة المشاركة (مربع يخرج منه سهم للأعلى) في أسفل الشاشة، ثم انزل للأسفل واضغط على "Add to Home Screen" أو "إضافة للشاشة الرئيسية".'); 
+            };
+        } else {
+            // لباقي المتصفحات (أندرويد / كروم)
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                installBanner.innerHTML = '📲 اضغط هنا لتثبيت تطبيق نعاون على هاتفك';
+                installBanner.classList.remove('hidden');
+            });
+
+            function installApp() {
+                installBanner.classList.add('hidden');
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; });
+                }
             }
+            installBanner.onclick = installApp;
         }
 
+        // تسجيل Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').then(reg => { console.log('Service Worker registered', reg); })
-                .catch(err => { console.log('Service Worker registration failed: ', err); });
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW fail: ', err));
             });
         }
         // ================= نهاية كود PWA =================
