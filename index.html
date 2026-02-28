@@ -23,7 +23,6 @@
         .header { background-color: var(--bg-white); color: var(--primary-gold); text-align: center; padding: 15px; font-size: 24px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-bottom: 3px solid var(--primary-gold); position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
         .header img { height: 40px; margin-left: 10px; border-radius: 8px; }
         
-        /* شريط الإعلانات المتحرك */
         #promo-banner-container { background: #333; color: var(--primary-gold); overflow: hidden; white-space: nowrap; padding: 8px 0; font-size: 14px; font-weight: bold; border-bottom: 1px solid var(--primary-gold); }
         .scrolling-text { display: inline-block; padding-left: 100%; animation: scroll-left 15s linear infinite; }
         @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
@@ -43,7 +42,6 @@
         .hidden { display: none !important; }
         .map-box { height: 300px; border-radius: 8px; margin-top: 15px; z-index: 1; width: 100%; background: #e9ecef;}
         
-        /* الخريطة الحرارية للإدارة */
         #admin-heatmap { height: 350px; border: 2px solid var(--primary-gold); margin-bottom: 20px; border-radius: 12px; }
 
         .section-title { color: var(--primary-gold); border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 25px;}
@@ -58,7 +56,6 @@
         .coupon-box { display: flex; gap: 10px; } .coupon-box input { flex: 2; margin: 0;} .coupon-box button { flex: 1; margin: 0; background: #333; }
         .success-text { color: green; font-weight: bold; font-size: 14px; margin-top: 5px; display: block;}
         
-        /* تصميم زر التثبيت PWA */
         #install-banner { background: var(--primary-gold); color: white; text-align: center; padding: 12px; position: sticky; top: 73px; z-index: 999; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 10px;}
         #install-banner:hover { background: var(--dark-gold); }
     </style>
@@ -180,8 +177,11 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // ⚠️ تأكد من وضع رابط جوجل شيت الصحيح الخاص بك هنا:
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyf1SM0VGQobTwtuWgyo1WAIAGQRb68vOMkF-CnVEcoWOPdybSF90ELxxaFEjThevk2/exec'; 
-        const ADMIN_PHONE = "93516953";
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwiTv4dLehSdiIsNGfWXA6N91-NSi47WN7BRYZ7l2CywVmv6xfpbb0ukkuepLm2n_T_/exec'; 
+        
+        // 🚨 أصبح متغيراً بدلاً من ثابت، ليتم تحديثه تلقائياً من جوجل شيت
+        let ADMIN_PHONE = "93516953"; 
+
         let watchId; let adminRefreshInterval; 
         let tempCustLat = null; let tempCustLng = null; let activePromoCode = "";
         let chart1, chart2; let availableDriversData = [];
@@ -190,21 +190,19 @@
         const driverAudio = new Audio('https://actions.google.com/sounds/v1/communications/incoming_phone_call.ogg');
         let lastNewOrdersCount = 0; let lastAssignedOrdersCount = 0; let isAudioAllowed = false;
 
-        // ================= كود تثبيت التطبيق (PWA الذكي الشامل) =================
+        // ================= كود تثبيت التطبيق (PWA) =================
         let deferredPrompt;
         const installBanner = document.getElementById('install-banner');
-
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const isStandalone = ('standalone' in window.navigator) && (window.navigator.standalone);
 
         if (isIOS && !isStandalone) {
             installBanner.innerHTML = '📲 لمستخدمي آيفون: اضغط على زر المشاركة بالأسفل ⍗ ثم اختار "إضافة للشاشة الرئيسية ➕"';
             installBanner.classList.remove('hidden');
-            installBanner.onclick = () => { alert('عزيزي العميل، في متصفح سفاري: اضغط على أيقونة المشاركة (مربع يخرج منه سهم للأعلى) في أسفل الشاشة، ثم انزل للأسفل واضغط على "Add to Home Screen" أو "إضافة للشاشة الرئيسية".'); };
+            installBanner.onclick = () => { alert('عزيزي العميل، في متصفح سفاري: اضغط على أيقونة المشاركة، ثم انزل للأسفل واضغط على "إضافة للشاشة الرئيسية".'); };
         } else {
             window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
+                e.preventDefault(); deferredPrompt = e;
                 installBanner.innerHTML = '📲 اضغط هنا لتثبيت تطبيق نعاون على هاتفك';
                 installBanner.classList.remove('hidden');
             });
@@ -219,7 +217,7 @@
         // ================= نهاية كود PWA =================
 
         window.addEventListener('DOMContentLoaded', () => {
-            loadBanner(); // تحميل الإعلان فوراً
+            loadSettings(); // جلب الإعدادات (الإعلان + رقم الإدارة) عند الفتح
             if (localStorage.getItem('adminLogged') === 'true') { showSection('admin-dashboard'); startAdminAutoRefresh(); }
             else if (localStorage.getItem('driverId')) { document.getElementById('driver-welcome-msg').innerText = `أهلاً بك، ${localStorage.getItem('driverName')}`; showSection('driver-dashboard'); fetchDriverOrders(false); }
             else if (localStorage.getItem('customerPhone')) { showSection('customer-dashboard'); checkMyOrder(); }
@@ -242,18 +240,23 @@
             return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1); 
         }
 
-        // ================= وظيفة شريط الإعلانات =================
-        function loadBanner() {
+        // ================= جلب الإعدادات (الإعلان + الإدارة) =================
+        function loadSettings() {
             fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'get_settings' }) })
             .then(res => res.json()).then(data => {
-                if(data.status === 'success' && data.banner) {
-                    document.getElementById('promo-text').innerText = data.banner;
-                    document.getElementById('promo-banner-container').classList.remove('hidden');
+                if(data.status === 'success' && data.settings) {
+                    if(data.settings.banner) {
+                        document.getElementById('promo-text').innerText = data.settings.banner;
+                        document.getElementById('promo-banner-container').classList.remove('hidden');
+                    }
+                    if(data.settings.adminPhone) {
+                        ADMIN_PHONE = data.settings.adminPhone; // تحديث رقم الإدارة ديناميكياً
+                    }
                 }
-            }).catch(e => console.log("Banner error", e));
+            }).catch(e => console.log("Settings error", e));
         }
 
-        // ================= وظيفة الخريطة الحرارية للإدارة =================
+        // ================= الخريطة الحرارية للإدارة =================
         let heatmap;
         function renderHeatmap(orders) {
             if(!heatmap) {
@@ -263,9 +266,7 @@
             heatmap.eachLayer((layer) => { if (layer instanceof L.Circle) heatmap.removeLayer(layer); });
 
             orders.forEach(o => {
-                if(o.custLat && o.custLng) {
-                    L.circle([o.custLat, o.custLng], { color: 'red', fillColor: '#f03', fillOpacity: 0.5, radius: 500 }).addTo(heatmap);
-                }
+                if(o.custLat && o.custLng) { L.circle([o.custLat, o.custLng], { color: 'red', fillColor: '#f03', fillOpacity: 0.5, radius: 500 }).addTo(heatmap); }
             });
             setTimeout(() => heatmap.invalidateSize(), 500);
         }
@@ -358,8 +359,10 @@
             if(!payload.city || !payload.area || !payload.pickup) { alert('الرجاء تعبئة البيانات'); return; }
             const btn = e.target; btn.innerText = 'جاري التسجيل...'; btn.disabled = true;
             
+            // 🚨 هنا نستخدم المتغير الجديد الذي يتغير حسب المناوبة
             let msg = `✨ طلب توصيل جديد!\n📞 رقم الزبون: ${payload.phone}\n📍 مكان التوصيل: ${payload.city} - ${payload.area}\n🏪 الاستلام من: ${payload.pickup}\n🛍️ تفاصيل الطلبية: ${payload.details}\n${activePromoCode ? '🎁 كود الخصم: '+activePromoCode : ''}`;
             window.open(`https://wa.me/968${ADMIN_PHONE}?text=${encodeURIComponent(msg)}`, '_blank');
+            
             fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) }).then(() => {
                 alert('تم إرسال الطلب!'); checkMyOrder();
                 document.getElementById('pickup-loc').value = ''; document.getElementById('order-details').value = ''; document.getElementById('promo-code').value = ''; activePromoCode = ""; document.getElementById('coupon-msg').classList.add('hidden'); document.getElementById('promo-code').disabled = false;
@@ -479,7 +482,7 @@
                     lastNewOrdersCount = data.newOrders.length;
                     
                     renderCharts(data.allOrders, data.drivers);
-                    renderHeatmap(data.allOrders); // تفعيل الخريطة الحرارية للإدارة
+                    renderHeatmap(data.allOrders); 
 
                     if(data.newOrders.length === 0) newContainer.innerHTML = '<p style="color:#666;">لا توجد طلبات جديدة.</p>';
                     else {
