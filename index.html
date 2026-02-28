@@ -51,13 +51,18 @@
         .badge-wait { background: #fff3cd; color: #856404; } .badge-prog { background: #cce5ff; color: #004085; } .badge-done { background: #d4edda; color: #155724; }
         .auto-refresh-indicator { font-size: 12px; color: green; text-align: center; margin-top: -10px; margin-bottom: 10px; }
         .eta-box { background: #e8f5e9; border: 1px solid #c8e6c9; padding: 10px; border-radius: 8px; margin-top: 10px; text-align: center; color: #2e7d32; font-weight: bold;}
-        .driver-badge { display: inline-block; padding: 5px 15px; background: #333; color: var(--primary-gold); border-radius: 20px; font-weight: bold; font-size: 14px; margin-bottom: 15px;}
+        .driver-badge { display: inline-block; padding: 5px 15px; background: #333; color: var(--primary-gold); border-radius: 20px; font-weight: bold; font-size: 14px; margin-bottom: 10px;}
         .chart-container { position: relative; height: 250px; width: 100%; margin-top: 15px; margin-bottom: 30px;}
         .coupon-box { display: flex; gap: 10px; } .coupon-box input { flex: 2; margin: 0;} .coupon-box button { flex: 1; margin: 0; background: #333; }
         .success-text { color: green; font-weight: bold; font-size: 14px; margin-top: 5px; display: block;}
         
         #install-banner { background: var(--primary-gold); color: white; text-align: center; padding: 12px; position: sticky; top: 73px; z-index: 999; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 10px;}
         #install-banner:hover { background: var(--dark-gold); }
+        
+        /* تصميم مربع البحث الذكي */
+        .search-box { background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 2px solid var(--primary-gold); display: flex; align-items: center; }
+        .search-box input { border: none; margin: 0; padding: 5px; box-shadow: none; font-size: 15px; flex: 1; }
+        .search-box input:focus { border: none; outline: none; }
     </style>
 </head>
 <body>
@@ -128,6 +133,8 @@
             <div style="text-align: center;">
                 <h3 id="driver-welcome-msg" style="margin-bottom: 5px;">أهلاً بك 🛵</h3>
                 <div id="driver-badge-display" class="driver-badge">🌟 جاري حساب مستواك...</div>
+                
+                <button id="drv-status-btn" onclick="toggleDriverStatus()" style="width: auto; padding: 6px 20px; border-radius: 20px; font-size: 14px; margin-top: 0; margin-bottom: 15px;">🟢 متصل وجاهز للعمل</button>
             </div>
             <button onclick="fetchDriverOrders(true)" style="background:#17a2b8; margin-bottom:10px;">تحديث وتفعيل جرس الطلبات 🔔</button>
             
@@ -153,6 +160,11 @@
             <h3>إدارة العمليات والمناديب</h3>
             <div class="auto-refresh-indicator">🟢 يتم التحديث تلقائياً كل 5 ثوانٍ</div>
             
+            <div class="search-box">
+                <span style="font-size: 20px;">🔍</span>
+                <input type="text" id="admin-search-bar" onkeyup="filterAdminOrders()" placeholder="ابحث برقم الطلب، رقم الهاتف، المندوب...">
+            </div>
+
             <h4 class="section-title">🔥 خريطة تركيز الطلبات (Heatmap)</h4>
             <div id="admin-heatmap" class="map-box"></div>
 
@@ -177,14 +189,14 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // ⚠️ تأكد من وضع رابط جوجل شيت الصحيح الخاص بك هنا:
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwiTv4dLehSdiIsNGfWXA6N91-NSi47WN7BRYZ7l2CywVmv6xfpbb0ukkuepLm2n_T_/exec'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxh3D5Gw_M-MObmWvj38-QMXM5CENgZMQzL3g5OhSlooCjkXWiJflGeAzbBS_M3uKXQ/exec'; 
         
-        // 🚨 أصبح متغيراً بدلاً من ثابت، ليتم تحديثه تلقائياً من جوجل شيت
         let ADMIN_PHONE = "93516953"; 
 
         let watchId; let adminRefreshInterval; 
         let tempCustLat = null; let tempCustLng = null; let activePromoCode = "";
         let chart1, chart2; let availableDriversData = [];
+        let currentDriverStatus = "متصل"; // متغير لحفظ حالة المندوب
 
         const adminAudio = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
         const driverAudio = new Audio('https://actions.google.com/sounds/v1/communications/incoming_phone_call.ogg');
@@ -217,9 +229,13 @@
         // ================= نهاية كود PWA =================
 
         window.addEventListener('DOMContentLoaded', () => {
-            loadSettings(); // جلب الإعدادات (الإعلان + رقم الإدارة) عند الفتح
+            loadSettings(); 
             if (localStorage.getItem('adminLogged') === 'true') { showSection('admin-dashboard'); startAdminAutoRefresh(); }
-            else if (localStorage.getItem('driverId')) { document.getElementById('driver-welcome-msg').innerText = `أهلاً بك، ${localStorage.getItem('driverName')}`; showSection('driver-dashboard'); fetchDriverOrders(false); }
+            else if (localStorage.getItem('driverId')) { 
+                document.getElementById('driver-welcome-msg').innerText = `أهلاً بك، ${localStorage.getItem('driverName')}`; 
+                applyDriverStatusUI(localStorage.getItem('driverStatus') || "متصل");
+                showSection('driver-dashboard'); fetchDriverOrders(false); 
+            }
             else if (localStorage.getItem('customerPhone')) { showSection('customer-dashboard'); checkMyOrder(); }
         });
 
@@ -240,23 +256,18 @@
             return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1); 
         }
 
-        // ================= جلب الإعدادات (الإعلان + الإدارة) =================
+        // ================= جلب الإعدادات =================
         function loadSettings() {
             fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'get_settings' }) })
             .then(res => res.json()).then(data => {
                 if(data.status === 'success' && data.settings) {
-                    if(data.settings.banner) {
-                        document.getElementById('promo-text').innerText = data.settings.banner;
-                        document.getElementById('promo-banner-container').classList.remove('hidden');
-                    }
-                    if(data.settings.adminPhone) {
-                        ADMIN_PHONE = data.settings.adminPhone; // تحديث رقم الإدارة ديناميكياً
-                    }
+                    if(data.settings.banner) { document.getElementById('promo-text').innerText = data.settings.banner; document.getElementById('promo-banner-container').classList.remove('hidden'); }
+                    if(data.settings.adminPhone) { ADMIN_PHONE = data.settings.adminPhone; }
                 }
             }).catch(e => console.log("Settings error", e));
         }
 
-        // ================= الخريطة الحرارية للإدارة =================
+        // ================= الخريطة الحرارية =================
         let heatmap;
         function renderHeatmap(orders) {
             if(!heatmap) {
@@ -264,7 +275,6 @@
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(heatmap);
             }
             heatmap.eachLayer((layer) => { if (layer instanceof L.Circle) heatmap.removeLayer(layer); });
-
             orders.forEach(o => {
                 if(o.custLat && o.custLng) { L.circle([o.custLat, o.custLng], { color: 'red', fillColor: '#f03', fillOpacity: 0.5, radius: 500 }).addTo(heatmap); }
             });
@@ -304,39 +314,20 @@
                     statusArea.innerHTML = `<h4 style="margin:0; color:var(--primary-gold);">طلبك: ${data.activeOrder.id}</h4><strong>الحالة:</strong> <span class="badge ${bc}">${data.activeOrder.status}</span><br><p style="font-size:13px; color:#666; margin-top:5px;">التفاصيل: ${data.activeOrder.details}</p>`;
                     
                     if(data.activeOrder.status.includes('توصيل')) {
-                        const mapContainer = document.getElementById('customer-map-container');
-                        mapContainer.classList.remove('hidden');
-
+                        const mapContainer = document.getElementById('customer-map-container'); mapContainer.classList.remove('hidden');
                         if(data.activeOrder.lat && data.activeOrder.lng && data.activeOrder.custLat && data.activeOrder.custLng) {
                             let dist = calculateDistance(data.activeOrder.lat, data.activeOrder.lng, data.activeOrder.custLat, data.activeOrder.custLng);
                             if(dist) { document.getElementById('eta-display').classList.remove('hidden'); document.getElementById('eta-display').innerHTML = `المسافة: ${dist} كم 🛵 | الوقت المتوقع: ${Math.ceil((dist/40)*60)} دقيقة ⏱️`; }
                         }
-
                         setTimeout(() => {
-                            let initLat = data.activeOrder.lat || data.activeOrder.custLat || 23.2255;
-                            let initLng = data.activeOrder.lng || data.activeOrder.custLng || 56.5165;
-
-                            if(!customerMap) {
-                                customerMap = L.map('customer-map').setView([initLat, initLng], 15);
-                                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(customerMap);
-                                customerMarker = L.marker([initLat, initLng]).addTo(customerMap).bindPopup('موقع المندوب 🛵').openPopup();
-                            } else {
-                                customerMarker.setLatLng([initLat, initLng]);
-                                customerMap.setView([initLat, initLng]);
-                            }
+                            let initLat = data.activeOrder.lat || data.activeOrder.custLat || 23.2255; let initLng = data.activeOrder.lng || data.activeOrder.custLng || 56.5165;
+                            if(!customerMap) { customerMap = L.map('customer-map').setView([initLat, initLng], 15); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(customerMap); customerMarker = L.marker([initLat, initLng]).addTo(customerMap).bindPopup('موقع المندوب 🛵').openPopup(); } 
+                            else { customerMarker.setLatLng([initLat, initLng]); customerMap.setView([initLat, initLng]); }
                             customerMap.invalidateSize(); 
                         }, 300);
-
                         if(!customerMapInterval) customerMapInterval = setInterval(refreshCustomerMapOnly, 5000);
-                    } else { 
-                        document.getElementById('customer-map-container').classList.add('hidden'); 
-                        if(customerMapInterval) { clearInterval(customerMapInterval); customerMapInterval = null; } 
-                    }
-                } else { 
-                    statusArea.innerHTML = '<p style="color:green; margin:0;">ليس لديك طلبات نشطة. اطلب الآن!</p>'; 
-                    document.getElementById('customer-map-container').classList.add('hidden'); 
-                    if(customerMapInterval) { clearInterval(customerMapInterval); customerMapInterval = null; } 
-                }
+                    } else { document.getElementById('customer-map-container').classList.add('hidden'); if(customerMapInterval) { clearInterval(customerMapInterval); customerMapInterval = null; } }
+                } else { statusArea.innerHTML = '<p style="color:green; margin:0;">ليس لديك طلبات نشطة. اطلب الآن!</p>'; document.getElementById('customer-map-container').classList.add('hidden'); if(customerMapInterval) { clearInterval(customerMapInterval); customerMapInterval = null; } }
             }).catch(e => { statusArea.innerHTML = "⚠️ حدث خطأ في الاتصال، يرجى المحاولة لاحقاً."; });
         }
 
@@ -359,7 +350,6 @@
             if(!payload.city || !payload.area || !payload.pickup) { alert('الرجاء تعبئة البيانات'); return; }
             const btn = e.target; btn.innerText = 'جاري التسجيل...'; btn.disabled = true;
             
-            // 🚨 هنا نستخدم المتغير الجديد الذي يتغير حسب المناوبة
             let msg = `✨ طلب توصيل جديد!\n📞 رقم الزبون: ${payload.phone}\n📍 مكان التوصيل: ${payload.city} - ${payload.area}\n🏪 الاستلام من: ${payload.pickup}\n🛍️ تفاصيل الطلبية: ${payload.details}\n${activePromoCode ? '🎁 كود الخصم: '+activePromoCode : ''}`;
             window.open(`https://wa.me/968${ADMIN_PHONE}?text=${encodeURIComponent(msg)}`, '_blank');
             
@@ -369,8 +359,29 @@
             }).finally(() => { btn.innerText = 'إرسال الطلب وإبلاغ الإدارة 📲'; btn.disabled = false; });
         }
 
-        /* ================= المندوب ================= */
+        /* ================= المندوب وحالة المندوب ================= */
         let driverMap, driverMarker;
+
+        // دالة تغيير شكل زر حالة المندوب
+        function applyDriverStatusUI(status) {
+            currentDriverStatus = status;
+            let btn = document.getElementById('drv-status-btn');
+            if(status === "غير متاح") {
+                btn.innerText = "🔴 غير متاح حالياً";
+                btn.style.background = "#dc3545";
+            } else {
+                btn.innerText = "🟢 متصل وجاهز للعمل";
+                btn.style.background = "#28a745";
+            }
+        }
+
+        // دالة إرسال حالة المندوب لجوجل شيت عند الضغط على الزر
+        function toggleDriverStatus() {
+            let newStatus = (currentDriverStatus === "متصل") ? "غير متاح" : "متصل";
+            applyDriverStatusUI(newStatus);
+            localStorage.setItem('driverStatus', newStatus);
+            fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_driver_status', driverId: localStorage.getItem('driverId'), status: newStatus }) });
+        }
 
         function loginDriver(e) {
             const id = document.getElementById('drv-id').value; const pass = document.getElementById('drv-pass').value;
@@ -378,14 +389,18 @@
             const btn = e.target; btn.innerText = 'جاري التحقق...'; btn.disabled = true;
             fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'login_driver', id: id, pass: pass }) })
             .then(res => res.json()).then(data => {
-                if(data.status === 'success') { localStorage.setItem('driverId', id); localStorage.setItem('driverName', data.name); document.getElementById('driver-welcome-msg').innerText = `أهلاً بك، ${data.name} 🛵`; showSection('driver-dashboard'); fetchDriverOrders(true); } 
-                else alert('بيانات غير صحيحة!');
+                if(data.status === 'success') { 
+                    localStorage.setItem('driverId', id); localStorage.setItem('driverName', data.name); localStorage.setItem('driverStatus', data.drvStatus);
+                    document.getElementById('driver-welcome-msg').innerText = `أهلاً بك، ${data.name} 🛵`; 
+                    applyDriverStatusUI(data.drvStatus);
+                    showSection('driver-dashboard'); fetchDriverOrders(true); 
+                } else alert('بيانات غير صحيحة!');
             }).finally(() => { btn.innerText = 'تسجيل الدخول'; btn.disabled = false; });
         }
 
         function fetchDriverOrders(userClicked = false) {
             if(userClicked) { isAudioAllowed = true; } 
-            const id = localStorage.getItem('driverId'); const dName = localStorage.getItem('driverName'); 
+            const id = localStorage.getItem('driverId'); 
             const container = document.getElementById('driver-orders-list'); 
             container.innerHTML = '<p>جاري البحث عن طلباتك... ⏳</p>';
 
@@ -454,7 +469,7 @@
             }
         }
 
-        /* ================= الإدارة ================= */
+        /* ================= الإدارة ومحرك البحث ================= */
         function loginAdmin(event) { 
             const user = document.getElementById('adm-user').value; const pass = document.getElementById('adm-pass').value;
             if(!user || !pass) return;
@@ -468,6 +483,17 @@
 
         function startAdminAutoRefresh() { fetchAdminData(); if(!adminRefreshInterval) { adminRefreshInterval = setInterval(fetchAdminData, 5000); } }
         function stopAdminAutoRefresh() { if(adminRefreshInterval) { clearInterval(adminRefreshInterval); adminRefreshInterval = null; } }
+
+        // دالة الفلترة (محرك البحث الذكي)
+        function filterAdminOrders() {
+            let input = document.getElementById('admin-search-bar').value.toLowerCase();
+            let cards = document.querySelectorAll('.admin-order-card');
+            cards.forEach(card => {
+                let text = card.innerText.toLowerCase();
+                if(text.includes(input)) card.style.display = '';
+                else card.style.display = 'none';
+            });
+        }
 
         let isFetchingAdmin = false;
         function fetchAdminData() {
@@ -490,8 +516,9 @@
                         data.drivers.forEach(d => opts += `<option value="${d.id}" data-name="${d.name}">${d.name} (طلباته الحالية: ${d.load})</option>`);
                         data.newOrders.forEach(o => {
                             let encArea = encodeURIComponent(o.area || ''); let encDetails = encodeURIComponent(o.details || '');
+                            // إضافة كلاس admin-order-card ليعمل عليه محرك البحث
                             newContainer.innerHTML += `
-                                <div style="border:1px solid #ddd; padding:15px; margin-bottom:15px; border-radius:8px; border-right: 5px solid var(--primary-gold); background:#fff;">
+                                <div class="admin-order-card" style="border:1px solid #ddd; padding:15px; margin-bottom:15px; border-radius:8px; border-right: 5px solid var(--primary-gold); background:#fff;">
                                     <h4 style="margin-top:0; color:var(--primary-gold);">طلب: ${o.id}</h4>
                                     <p style="margin:5px 0;"><strong>المنطقة:</strong> ${o.city} - ${o.area}</p>
                                     <p style="margin:5px 0;"><strong>الاستلام من:</strong> ${o.pickup}</p>
@@ -499,7 +526,7 @@
                                     <p style="margin:5px 0;"><strong>العميل:</strong> <a href="https://wa.me/968${o.phone}" target="_blank" style="color: green; text-decoration: none; font-weight:bold;">💬 ${o.phone}</a></p>
                                     <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
                                     <div style="display:flex; flex-direction:column; gap:5px;">
-                                        <button onclick="autoAssignOrder('${o.id}', '${o.phone}', '${encArea}', '${encDetails}')" class="btn-smart">🪄 إسناد ذكي (لأقل مندوب ضغطاً)</button>
+                                        <button onclick="autoAssignOrder('${o.id}', '${o.phone}', '${encArea}', '${encDetails}')" class="btn-smart">🪄 إسناد ذكي للمتاحين فقط</button>
                                         <select id="driver-select-${o.id}">${opts}</select>
                                         <button onclick="assignOrder('${o.id}', '${o.phone}', '${encArea}', '${encDetails}', event)">إسناد يدوي 📲</button>
                                     </div>
@@ -509,14 +536,18 @@
                     }
                     data.allOrders.reverse().forEach(o => {
                         let badgeClass = o.status.includes('انتظار') || o.status.includes('مراجعة') ? 'badge-wait' : (o.status.includes('تم التسليم') ? 'badge-done' : 'badge-prog');
-                        allContainer.innerHTML += `<div style="border-bottom:1px solid #eee; padding:10px 0; font-size:14px;"><strong>${o.id}</strong> - <span class="badge ${badgeClass}">${o.status}</span><p style="margin:5px 0; color:#555;">المنطقة: ${o.area} ${o.driverName ? '<br><span style="color:var(--primary-gold)">المندوب: '+o.driverName+'</span>' : ''}</p></div>`;
+                        // إضافة كلاس admin-order-card ليعمل عليه محرك البحث
+                        allContainer.innerHTML += `<div class="admin-order-card" style="border-bottom:1px solid #eee; padding:10px 0; font-size:14px;"><strong>${o.id}</strong> - <span class="badge ${badgeClass}">${o.status}</span><p style="margin:5px 0; color:#555;">المنطقة: ${o.area} <br>الهاتف: ${o.phone} ${o.driverName ? '<br><span style="color:var(--primary-gold)">المندوب: '+o.driverName+'</span>' : ''}</p></div>`;
                     });
                 }
-            }).finally(() => { isFetchingAdmin = false; });
+            }).finally(() => { 
+                isFetchingAdmin = false; 
+                filterAdminOrders(); // إعادة تطبيق البحث بعد التحديث التلقائي حتى لا تختفي النتائج!
+            });
         }
 
         function autoAssignOrder(orderId, phone, encArea, encDetails) {
-            if(availableDriversData.length === 0) { alert('لا يوجد مناديب مسجلين!'); return; }
+            if(availableDriversData.length === 0) { alert('لا يوجد مناديب متاحين حالياً!'); return; }
             let bestDriver = availableDriversData.reduce((prev, curr) => (prev.load < curr.load) ? prev : curr);
             let area = decodeURIComponent(encArea); let details = decodeURIComponent(encDetails);
             
