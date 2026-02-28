@@ -11,7 +11,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     
-    <title>فريق نعاون</title>
+    <title>Na'awn Delivery</title>
     <link rel="icon" href="https://i.imgur.com/OqQuD0p.png" type="image/png">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
@@ -22,6 +22,12 @@
         body { font-family: 'Cairo', sans-serif; margin: 0; padding: 0; background-color: var(--light-gray); color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; }
         .header { background-color: var(--bg-white); color: var(--primary-gold); text-align: center; padding: 15px; font-size: 24px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-bottom: 3px solid var(--primary-gold); position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
         .header img { height: 40px; margin-left: 10px; border-radius: 8px; }
+        
+        /* شريط الإعلانات المتحرك */
+        #promo-banner-container { background: #333; color: var(--primary-gold); overflow: hidden; white-space: nowrap; padding: 8px 0; font-size: 14px; font-weight: bold; border-bottom: 1px solid var(--primary-gold); }
+        .scrolling-text { display: inline-block; padding-left: 100%; animation: scroll-left 15s linear infinite; }
+        @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
         .container { padding: 20px; max-width: 600px; margin: 0 auto; flex: 1; width: 100%; box-sizing: border-box;}
         .card { background: var(--bg-white); border-radius: 12px; padding: 25px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 20px; }
         input, select, textarea, button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; font-family: 'Cairo', sans-serif; box-sizing: border-box; font-size: 15px; }
@@ -36,16 +42,16 @@
         .btn-smart { background-color: #6f42c1; font-size: 14px; padding: 10px; margin-top: 5px; } .btn-smart:hover { background-color: #59339d; }
         .hidden { display: none !important; }
         .map-box { height: 300px; border-radius: 8px; margin-top: 15px; z-index: 1; width: 100%; background: #e9ecef;}
+        
+        /* الخريطة الحرارية للإدارة */
+        #admin-heatmap { height: 350px; border: 2px solid var(--primary-gold); margin-bottom: 20px; border-radius: 12px; }
+
         .section-title { color: var(--primary-gold); border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 25px;}
         .footer { text-align: center; padding: 20px; font-size: 13px; color: #aaa; margin-top: auto; border-top: 1px solid #eee; background: var(--bg-white); }
         .footer span { cursor: pointer; margin: 0 10px; transition: color 0.3s; } .footer span:hover { color: var(--primary-gold); }
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;}
         .badge-wait { background: #fff3cd; color: #856404; } .badge-prog { background: #cce5ff; color: #004085; } .badge-done { background: #d4edda; color: #155724; }
         .auto-refresh-indicator { font-size: 12px; color: green; text-align: center; margin-top: -10px; margin-bottom: 10px; }
-        .star-rating { display: flex; flex-direction: row-reverse; justify-content: center; gap: 5px; margin-bottom: 15px; }
-        .star-rating input { display: none; }
-        .star-rating label { font-size: 35px; color: #ddd; cursor: pointer; transition: 0.2s; }
-        .star-rating input:checked ~ label, .star-rating label:hover, .star-rating label:hover ~ label { color: var(--primary-gold); }
         .eta-box { background: #e8f5e9; border: 1px solid #c8e6c9; padding: 10px; border-radius: 8px; margin-top: 10px; text-align: center; color: #2e7d32; font-weight: bold;}
         .driver-badge { display: inline-block; padding: 5px 15px; background: #333; color: var(--primary-gold); border-radius: 20px; font-weight: bold; font-size: 14px; margin-bottom: 15px;}
         .chart-container { position: relative; height: 250px; width: 100%; margin-top: 15px; margin-bottom: 30px;}
@@ -59,8 +65,12 @@
 </head>
 <body>
 
-    <div class="header"><img src="https://i.imgur.com/OqQuD0p.png" alt="شعار نعاون">فريق نعاون</div>
+    <div class="header"><img src="https://i.imgur.com/OqQuD0p.png" alt="شعار نعاون">Na'awn Delivery</div>
     
+    <div id="promo-banner-container" class="hidden">
+        <div class="scrolling-text" id="promo-text">جاري تحميل العروض... ✨</div>
+    </div>
+
     <div id="install-banner" class="hidden"></div>
 
     <div class="container">
@@ -146,6 +156,9 @@
             <h3>إدارة العمليات والمناديب</h3>
             <div class="auto-refresh-indicator">🟢 يتم التحديث تلقائياً كل 5 ثوانٍ</div>
             
+            <h4 class="section-title">🔥 خريطة تركيز الطلبات (Heatmap)</h4>
+            <div id="admin-heatmap" class="map-box"></div>
+
             <h4 class="section-title">📊 إحصائيات نعاون</h4>
             <div class="chart-container"><canvas id="statusChart"></canvas></div>
             <div class="chart-container"><canvas id="driversChart"></canvas></div>
@@ -167,7 +180,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // ⚠️ تأكد من وضع رابط جوجل شيت الصحيح الخاص بك هنا:
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz9ebdSjWwrilYlTthEoDswQ1nPViORsrterQhwPnV0LmA7x3mnMNX4uB3eTc6XJilo/exec'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzg41yfa4CzVheEhbAqYb7GZ7KlTNPrkvVB6v65t0VOS41MAX0chKF3LFpX_toTTPto/exec'; 
         const ADMIN_PHONE = "93516953";
         let watchId; let adminRefreshInterval; 
         let tempCustLat = null; let tempCustLng = null; let activePromoCode = "";
@@ -181,45 +194,32 @@
         let deferredPrompt;
         const installBanner = document.getElementById('install-banner');
 
-        // فحص إذا كان الجهاز آيفون/آيباد
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const isStandalone = ('standalone' in window.navigator) && (window.navigator.standalone);
 
         if (isIOS && !isStandalone) {
-            // إذا كان آيفون وغير مثبت، نعرض دليلاً للمستخدم
             installBanner.innerHTML = '📲 لمستخدمي آيفون: اضغط على زر المشاركة بالأسفل ⍗ ثم اختار "إضافة للشاشة الرئيسية ➕"';
             installBanner.classList.remove('hidden');
-            installBanner.onclick = () => { 
-                alert('عزيزي العميل، في متصفح سفاري: اضغط على أيقونة المشاركة (مربع يخرج منه سهم للأعلى) في أسفل الشاشة، ثم انزل للأسفل واضغط على "Add to Home Screen" أو "إضافة للشاشة الرئيسية".'); 
-            };
+            installBanner.onclick = () => { alert('عزيزي العميل، في متصفح سفاري: اضغط على أيقونة المشاركة (مربع يخرج منه سهم للأعلى) في أسفل الشاشة، ثم انزل للأسفل واضغط على "Add to Home Screen" أو "إضافة للشاشة الرئيسية".'); };
         } else {
-            // لباقي المتصفحات (أندرويد / كروم)
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
                 installBanner.innerHTML = '📲 اضغط هنا لتثبيت تطبيق نعاون على هاتفك';
                 installBanner.classList.remove('hidden');
             });
-
             function installApp() {
                 installBanner.classList.add('hidden');
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; });
-                }
+                if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; }); }
             }
             installBanner.onclick = installApp;
         }
 
-        // تسجيل Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW fail: ', err));
-            });
-        }
+        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW fail: ', err)); }); }
         // ================= نهاية كود PWA =================
 
         window.addEventListener('DOMContentLoaded', () => {
+            loadBanner(); // تحميل الإعلان فوراً
             if (localStorage.getItem('adminLogged') === 'true') { showSection('admin-dashboard'); startAdminAutoRefresh(); }
             else if (localStorage.getItem('driverId')) { document.getElementById('driver-welcome-msg').innerText = `أهلاً بك، ${localStorage.getItem('driverName')}`; showSection('driver-dashboard'); fetchDriverOrders(false); }
             else if (localStorage.getItem('customerPhone')) { showSection('customer-dashboard'); checkMyOrder(); }
@@ -240,6 +240,34 @@
             const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
             return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1); 
+        }
+
+        // ================= وظيفة شريط الإعلانات =================
+        function loadBanner() {
+            fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'get_settings' }) })
+            .then(res => res.json()).then(data => {
+                if(data.status === 'success' && data.banner) {
+                    document.getElementById('promo-text').innerText = data.banner;
+                    document.getElementById('promo-banner-container').classList.remove('hidden');
+                }
+            }).catch(e => console.log("Banner error", e));
+        }
+
+        // ================= وظيفة الخريطة الحرارية للإدارة =================
+        let heatmap;
+        function renderHeatmap(orders) {
+            if(!heatmap) {
+                heatmap = L.map('admin-heatmap').setView([23.2255, 56.5165], 8);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(heatmap);
+            }
+            heatmap.eachLayer((layer) => { if (layer instanceof L.Circle) heatmap.removeLayer(layer); });
+
+            orders.forEach(o => {
+                if(o.custLat && o.custLng) {
+                    L.circle([o.custLat, o.custLng], { color: 'red', fillColor: '#f03', fillOpacity: 0.5, radius: 500 }).addTo(heatmap);
+                }
+            });
+            setTimeout(() => heatmap.invalidateSize(), 500);
         }
 
         /* ================= العميل ================= */
@@ -264,41 +292,58 @@
         let customerMap, customerMarker; let customerMapInterval;
 
         function checkMyOrder() {
-            const phone = localStorage.getItem('customerPhone'); const statusArea = document.getElementById('customer-status-area');
-            statusArea.innerHTML = 'جاري البحث... ⏳';
+            const phone = localStorage.getItem('customerPhone'); 
+            const statusArea = document.getElementById('customer-status-area');
+            statusArea.innerHTML = 'جاري البحث عن طلبك... ⏳';
+
             fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'check_customer_order', phone: phone }) })
             .then(res => res.json()).then(data => {
                 if(data.status === "success" && data.activeOrder) {
                     let bc = data.activeOrder.status.includes('انتظار') || data.activeOrder.status.includes('مراجعة') ? 'badge-wait' : 'badge-prog';
-                    statusArea.innerHTML = `<h4 style="margin-top:0; color:var(--primary-gold);">طلبك الحالي</h4><strong>رقم:</strong> ${data.activeOrder.id}<br><strong>الحالة:</strong> <span class="badge ${bc}">${data.activeOrder.status}</span><br><p style="font-size:13px; color:#666; margin-top:5px;">التفاصيل: ${data.activeOrder.details}</p>`;
+                    statusArea.innerHTML = `<h4 style="margin:0; color:var(--primary-gold);">طلبك: ${data.activeOrder.id}</h4><strong>الحالة:</strong> <span class="badge ${bc}">${data.activeOrder.status}</span><br><p style="font-size:13px; color:#666; margin-top:5px;">التفاصيل: ${data.activeOrder.details}</p>`;
                     
-                    if(data.activeOrder.status.includes('قيد التوصيل')) {
-                        document.getElementById('customer-map-container').classList.remove('hidden');
-                        if(data.activeOrder.lat && data.activeOrder.lng) {
-                            if(data.activeOrder.custLat && data.activeOrder.custLng) {
-                                let dist = calculateDistance(data.activeOrder.lat, data.activeOrder.lng, data.activeOrder.custLat, data.activeOrder.custLng);
-                                if(dist) { document.getElementById('eta-display').classList.remove('hidden'); document.getElementById('eta-display').innerHTML = `المسافة: ${dist} كم 🛵 | الوقت المتوقع: ${Math.ceil((dist/40)*60)} دقيقة ⏱️`; }
-                            }
-                            if(!customerMap) { customerMap = L.map('customer-map').setView([data.activeOrder.lat, data.activeOrder.lng], 15); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(customerMap); customerMarker = L.marker([data.activeOrder.lat, data.activeOrder.lng]).addTo(customerMap).bindPopup('المندوب 🛵').openPopup(); } 
-                            else { customerMarker.setLatLng([data.activeOrder.lat, data.activeOrder.lng]); customerMap.panTo([data.activeOrder.lat, data.activeOrder.lng]); }
-                        } else {
-                            if(!customerMap) {
-                                let initLat = data.activeOrder.custLat || 23.2255; let initLng = data.activeOrder.custLng || 56.5165;
-                                customerMap = L.map('customer-map').setView([initLat, initLng], 12); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(customerMap); customerMap.bindPopup('جاري الاتصال بـ GPS المندوب... ⏳').openPopup([initLat, initLng]);
-                            }
+                    if(data.activeOrder.status.includes('توصيل')) {
+                        const mapContainer = document.getElementById('customer-map-container');
+                        mapContainer.classList.remove('hidden');
+
+                        if(data.activeOrder.lat && data.activeOrder.lng && data.activeOrder.custLat && data.activeOrder.custLng) {
+                            let dist = calculateDistance(data.activeOrder.lat, data.activeOrder.lng, data.activeOrder.custLat, data.activeOrder.custLng);
+                            if(dist) { document.getElementById('eta-display').classList.remove('hidden'); document.getElementById('eta-display').innerHTML = `المسافة: ${dist} كم 🛵 | الوقت المتوقع: ${Math.ceil((dist/40)*60)} دقيقة ⏱️`; }
                         }
-                        setTimeout(() => customerMap.invalidateSize(), 500);
-                        if(!customerMapInterval) { customerMapInterval = setInterval(refreshCustomerMapOnly, 5000); }
-                    } else { document.getElementById('customer-map-container').classList.add('hidden'); if(customerMapInterval) { clearInterval(customerMapInterval); customerMapInterval = null; } }
-                } else { statusArea.innerHTML = '<p style="color:green; margin:0;">ليس لديك طلبات نشطة. اطلب الآن!</p>'; document.getElementById('customer-map-container').classList.add('hidden'); if(customerMapInterval) { clearInterval(customerMapInterval); customerMapInterval = null; } }
-            });
+
+                        setTimeout(() => {
+                            let initLat = data.activeOrder.lat || data.activeOrder.custLat || 23.2255;
+                            let initLng = data.activeOrder.lng || data.activeOrder.custLng || 56.5165;
+
+                            if(!customerMap) {
+                                customerMap = L.map('customer-map').setView([initLat, initLng], 15);
+                                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(customerMap);
+                                customerMarker = L.marker([initLat, initLng]).addTo(customerMap).bindPopup('موقع المندوب 🛵').openPopup();
+                            } else {
+                                customerMarker.setLatLng([initLat, initLng]);
+                                customerMap.setView([initLat, initLng]);
+                            }
+                            customerMap.invalidateSize(); 
+                        }, 300);
+
+                        if(!customerMapInterval) customerMapInterval = setInterval(refreshCustomerMapOnly, 5000);
+                    } else { 
+                        document.getElementById('customer-map-container').classList.add('hidden'); 
+                        if(customerMapInterval) { clearInterval(customerMapInterval); customerMapInterval = null; } 
+                    }
+                } else { 
+                    statusArea.innerHTML = '<p style="color:green; margin:0;">ليس لديك طلبات نشطة. اطلب الآن!</p>'; 
+                    document.getElementById('customer-map-container').classList.add('hidden'); 
+                    if(customerMapInterval) { clearInterval(customerMapInterval); customerMapInterval = null; } 
+                }
+            }).catch(e => { statusArea.innerHTML = "⚠️ حدث خطأ في الاتصال، يرجى المحاولة لاحقاً."; });
         }
 
         function refreshCustomerMapOnly() {
             const phone = localStorage.getItem('customerPhone');
             fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'check_customer_order', phone: phone }) })
             .then(res => res.json()).then(data => {
-                if(data.status === "success" && data.activeOrder && data.activeOrder.status.includes('قيد التوصيل') && data.activeOrder.lat) {
+                if(data.status === "success" && data.activeOrder && data.activeOrder.status.includes('توصيل') && data.activeOrder.lat) {
                     if(data.activeOrder.custLat && data.activeOrder.custLng) {
                         let dist = calculateDistance(data.activeOrder.lat, data.activeOrder.lng, data.activeOrder.custLat, data.activeOrder.custLng);
                         if(dist) { document.getElementById('eta-display').classList.remove('hidden'); document.getElementById('eta-display').innerHTML = `المسافة: ${dist} كم 🛵 | الوقت المتوقع: ${Math.ceil((dist/40)*60)} دقيقة ⏱️`; }
@@ -434,6 +479,7 @@
                     lastNewOrdersCount = data.newOrders.length;
                     
                     renderCharts(data.allOrders, data.drivers);
+                    renderHeatmap(data.allOrders); // تفعيل الخريطة الحرارية للإدارة
 
                     if(data.newOrders.length === 0) newContainer.innerHTML = '<p style="color:#666;">لا توجد طلبات جديدة.</p>';
                     else {
