@@ -65,8 +65,6 @@
         
         .cash-box { background: #fdfaf0; border: 1px solid var(--primary-gold); padding: 15px; border-radius: 8px; margin-bottom: 15px;}
         .driver-price-input { border: 2px solid #28a745; background: #f8fff9; text-align: center; font-weight: bold; font-size: 18px; margin-bottom: 5px; }
-        
-        /* تصميم صندوق التقييم */
         .feedback-box { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-top: 20px; }
     </style>
 </head>
@@ -112,7 +110,7 @@
             <div class="coupon-box"><input type="text" id="promo-code" placeholder="أدخل الكود هنا"><button onclick="applyCoupon(event)" type="button">تطبيق</button></div>
             <span id="coupon-msg" class="success-text hidden"></span>
 
-            <button onclick="submitOrder(event)" id="submit-order-btn">إرسال الطلب وإبلاغ الإدارة 📲</button>
+            <button onclick="submitOrder(event)" id="submit-order-btn">إرسال الطلب واعتماده 📲</button>
 
             <div class="feedback-box">
                 <h4 style="margin-top:0; color:var(--primary-gold); border-bottom:1px solid #ddd; padding-bottom:5px;">⭐ رأيك يهمنا</h4>
@@ -229,14 +227,14 @@
         <span onclick="showSection('vendor-login')">التُجّار والمطاعم</span> | 
         <span onclick="showSection('driver-login')">الموظفين</span> | 
         <span onclick="showSection('admin-login')">الإدارة</span>
-
-        <div style="margin-top: 15px; font-size: 11px; color: #888;">&copy; جميع الحقوق محفوظة لفريق نعاون لخدمات التوصيل 2026</div>
+        
+        <div style="margin-top: 15px; font-size: 12px; color: #888; font-weight: bold;">&copy; جميع الحقوق محفوظة لفريق نعاون لخدمات التوصيل 2026</div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyK7gwv-RiMYsQq9evHtZ1VJ5Ryhlv1CcqETmV4Wn7iAu_wiqD3yHyS0TeDJTIwkq6m/exec'; 
-        let ADMIN_PHONE = "93516953"; 
+        // ⚠️ ضع رابط جوجل شيت الخاص بك هنا
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyTyKMroZXxMU6NuzrNNaDvfpUTkrDxzJzMlUy5hAc9uQ16RlH94h0iOydO-u_IwhOK/exec'; 
 
         let watchId; let adminRefreshInterval; 
         let tempCustLat = null; let tempCustLng = null; let activePromoCode = "";
@@ -297,7 +295,6 @@
             .then(res => res.json()).then(data => {
                 if(data.status === 'success' && data.settings) {
                     if(data.settings.banner) { document.getElementById('promo-text').innerText = data.settings.banner; document.getElementById('promo-banner-container').classList.remove('hidden'); }
-                    if(data.settings.adminPhone) { ADMIN_PHONE = data.settings.adminPhone; }
                 }
             });
         }
@@ -370,31 +367,22 @@
             if(!payload.city || !payload.area || !payload.pickup) { alert('الرجاء تعبئة البيانات'); return; }
             const btn = e.target; btn.innerText = 'جاري التسجيل...'; btn.disabled = true;
             
-            let msg = `✨ طلب جديد!\n📞 الزبون: ${payload.phone}\n📍 التوصيل: ${payload.city} - ${payload.area}\n🏪 الاستلام: ${payload.pickup}\n🛍️ التفاصيل: ${payload.details}`;
-            window.open(`https://wa.me/968${ADMIN_PHONE}?text=${encodeURIComponent(msg)}`, '_blank');
-            
             fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) }).then(() => {
-                alert('تم إرسال الطلب!'); checkMyOrder();
+                alert('تم إرسال الطلب بنجاح لأسطول نعاون!'); checkMyOrder();
                 document.getElementById('pickup-loc').value = ''; document.getElementById('order-details').value = ''; document.getElementById('promo-code').value = ''; activePromoCode = ""; document.getElementById('coupon-msg').classList.add('hidden'); document.getElementById('promo-code').disabled = false;
-            }).finally(() => { btn.innerText = 'إرسال الطلب وإبلاغ الإدارة 📲'; btn.disabled = false; });
+            }).finally(() => { btn.innerText = 'إرسال الطلب واعتماده 📲'; btn.disabled = false; });
         }
 
-        // دالة إرسال التقييم
         function submitFeedback(e) {
             const rating = document.getElementById('cust-rating').value;
             const text = document.getElementById('cust-feedback').value;
             const phone = localStorage.getItem('customerPhone');
-            
             if(!text) { alert('الرجاء كتابة ملاحظتك أو شكواك.'); return; }
-            
             const btn = e.target; btn.innerText = 'جاري الإرسال...'; btn.disabled = true;
             
             fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'new_feedback', phone: phone, rating: rating, text: text }) })
             .then(res => res.json()).then(data => {
-                if(data.status === 'success') { 
-                    alert('شكراً لك! تم إرسال تقييمك للإدارة بنجاح.'); 
-                    document.getElementById('cust-feedback').value = ''; 
-                }
+                if(data.status === 'success') { alert('شكراً لك! تم إرسال تقييمك للإدارة بنجاح.'); document.getElementById('cust-feedback').value = ''; }
             }).finally(() => { btn.innerText = 'إرسال التقييم للإدارة 📤'; btn.disabled = false; });
         }
 
@@ -444,16 +432,13 @@
             if(!payload.phone || !payload.area || !payload.details) { alert('الرجاء تعبئة بيانات الزبون الأساسية'); return; }
             const btn = e.target; btn.innerText = 'جاري إرسال الطلب...'; btn.disabled = true;
             
-            let msg = `🏪 طلب جديد من متجر: ${vName}!\n📞 الزبون: ${payload.phone}\n📍 التوصيل: ${payload.city} - ${payload.area}\n🛍️ التفاصيل: ${payload.details}\n${payload.price > 0 ? '💰 مطلوب تحصيل: '+payload.price+' ر.ع' : ''}`;
-            window.open(`https://wa.me/968${ADMIN_PHONE}?text=${encodeURIComponent(msg)}`, '_blank');
-            
             fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) }).then(() => {
                 alert('تم إرسال الطلب بنجاح لأسطول نعاون!'); fetchVendorOrders();
                 document.getElementById('vnd-cust-phone').value = ''; document.getElementById('vnd-cust-city').value = ''; document.getElementById('vnd-cust-area').value = ''; document.getElementById('vnd-order-details').value = ''; document.getElementById('vnd-order-price').value = '';
             }).finally(() => { btn.innerText = 'طلب مندوب فوراً 🛵'; btn.disabled = false; });
         }
 
-        /* ================= المندوب ================= */
+        /* ================= المندوب وتفاصيل الطلبية والواتساب הيدوي ================= */
         let driverMap, driverMarker;
 
         function applyDriverStatusUI(status) {
@@ -500,13 +485,12 @@
                     let actionsHtml = '';
                     if(order.status.includes('تم الإسناد')) { actionsHtml = `<button onclick="acceptOrder('${order.id}')" class="btn-success">استلام وبدء التتبع 📍</button>`; } 
                     else if (order.status.includes('قيد التوصيل')) {
-                        let waMsg = `أهلاً بك عميلنا العزيز 👋\nأنا المندوب في طريقي إليك 🛵\n\n📦 *تفاصيل طلبك:*\n🔢 رقم الطلب: ${order.id}\n📍 مكان التوصيل: ${order.area}\nسأتواصل معك عند الوصول ✨`;
-                        let waLink = `https://wa.me/968${order.phone}?text=${encodeURIComponent(waMsg)}`;
-                        
+                        // إبقاء زر الواتساب اليدوي للمندوب فقط لحالات الطوارئ (مثل طلب موقع المنزل من الزبون)
+                        let waLink = `https://wa.me/968${order.phone}?text=${encodeURIComponent("أهلاً بك، أنا مندوب نعاون متواجد بالقرب منك 🛵")}`;
                         actionsHtml = `
                             <div style="margin: 10px 0; background: #f1f8ff; padding: 10px; border-radius: 5px;">
-                                <a href="tel:${order.phone}" style="display:inline-block; padding:8px 15px; background:#17a2b8; color:white; text-decoration:none; border-radius:5px;">📞 اتصال بالعميل</a>
-                                <a href="${waLink}" target="_blank" style="display:inline-block; padding:8px 15px; background:#25D366; color:white; text-decoration:none; border-radius:5px;">💬 واتساب للعميل</a>
+                                <a href="tel:${order.phone}" style="display:inline-block; padding:8px 15px; background:#17a2b8; color:white; text-decoration:none; border-radius:5px;">📞 اتصال</a>
+                                <a href="${waLink}" target="_blank" style="display:inline-block; padding:8px 15px; background:#25D366; color:white; text-decoration:none; border-radius:5px;">💬 واتساب</a>
                             </div>
                             <label style="font-size:14px; font-weight:bold; color:var(--primary-gold);">💰 إجمالي المبلغ المستلم:</label>
                             <input type="number" id="collected-price-${order.id}" class="driver-price-input" placeholder="مثال: 5.500">
@@ -514,7 +498,7 @@
                         `;
                         setTimeout(() => { startDriverGPS(order.id); }, 1000);
                     }
-                    container.innerHTML += `<div style="border:1px solid #ddd; padding:15px; border-radius:8px; margin-bottom:15px;"><h4 style="margin-top:0; color:var(--primary-gold);">طلب: ${order.id}</h4><p style="margin:5px 0;"><strong>من:</strong> ${order.pickup} | <strong>إلى:</strong> ${order.area}</p><p style="margin:5px 0; color:#555;"><strong>التفاصيل:</strong> ${order.details}</p>${actionsHtml}</div>`;
+                    container.innerHTML += `<div style="border:1px solid #ddd; padding:15px; border-radius:8px; margin-bottom:15px;"><h4 style="margin-top:0; color:var(--primary-gold);">طلب: ${order.id}</h4><p style="margin:5px 0;"><strong>من:</strong> ${order.pickup} | <strong>إلى:</strong> ${order.area}</p><p style="margin:5px 0; color:#555; background:#f9f9f9; padding:8px; border-radius:5px;"><strong>📦 تفاصيل الطلبية:</strong><br>${order.details}</p>${actionsHtml}</div>`;
                 });
             });
         }
@@ -542,7 +526,7 @@
             }
         }
 
-        /* ================= الإدارة ================= */
+        /* ================= الإدارة الآلية 100% ================= */
         function loginAdmin(event) { 
             const user = document.getElementById('adm-user').value; const pass = document.getElementById('adm-pass').value; if(!user || !pass) return;
             const btn = event.target; btn.innerText = '⏳'; btn.disabled = true;
@@ -594,12 +578,12 @@
                                     <p style="margin:5px 0;"><strong>المنطقة:</strong> ${o.area}</p>
                                     <p style="margin:5px 0;"><strong>الاستلام من:</strong> ${o.pickup}</p>
                                     ${o.promoCode ? `<p style="margin:5px 0; color:green;"><strong>🎁 كود الخصم المطبق:</strong> ${o.promoCode}</p>` : ''}
-                                    <p style="margin:5px 0;"><strong>العميل:</strong> <a href="https://wa.me/968${o.phone}" target="_blank" style="color: green; text-decoration: none; font-weight:bold;">💬 ${o.phone}</a></p>
+                                    <p style="margin:5px 0;"><strong>العميل:</strong> ${o.phone}</p>
                                     <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
                                     <div style="display:flex; flex-direction:column; gap:5px;">
                                         <button onclick="autoAssignOrder('${o.id}', '${o.phone}', '${encArea}', '${encDetails}')" class="btn-smart">🪄 إسناد ذكي للمتاحين فقط</button>
                                         <select id="driver-select-${o.id}">${opts}</select>
-                                        <button onclick="assignOrder('${o.id}', '${o.phone}', '${encArea}', '${encDetails}', event)">إسناد يدوي 📲</button>
+                                        <button onclick="assignOrder('${o.id}', '${o.phone}', '${encArea}', '${encDetails}', event)">إسناد للمندوب المحدد 📲</button>
                                     </div>
                                 </div>`;
                         });
@@ -633,10 +617,7 @@
         function autoAssignOrder(orderId, phone, encArea, encDetails) {
             if(availableDriversData.length === 0) { alert('لا يوجد مناديب متاحين حالياً!'); return; }
             let bestDriver = availableDriversData.reduce((prev, curr) => (prev.load < curr.load) ? prev : curr);
-            let area = decodeURIComponent(encArea); let details = decodeURIComponent(encDetails);
             if(confirm(`سيتم إسناد الطلب ذكياً للمندوب: ${bestDriver.name}\n(لديه ${bestDriver.load} طلبات حالياً).\nهل توافق؟`)) {
-                let msg = `🌟 عميلنا العزيز،\nتم إسناد طلبك للمندوب: ${bestDriver.name} 🛵\n\n📦 *تفاصيل طلبك:*\n🔢 رقم الطلب: ${orderId}\n📞 رقم الزبون: ${phone}\n📍 مكان التوصيل: ${area}\n🛍️ تفاصيل الطلبية: ${details}\n\nيمكنك تتبع الطلب من المنصة الآن!`;
-                window.open(`https://wa.me/968${phone}?text=${encodeURIComponent(msg)}`, '_blank');
                 fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_status', orderId: orderId, newStatus: 'تم الإسناد للمندوب', driverId: bestDriver.id, driverName: bestDriver.name }) }).then(() => fetchAdminData());
             }
         }
@@ -644,9 +625,7 @@
         function assignOrder(orderId, phone, encArea, encDetails, event) {
             const select = document.getElementById(`driver-select-${orderId}`); if(!select.value) { alert('اختر مندوب!'); return; }
             event.target.innerText = 'جاري الإسناد...';
-            let driverName = select.options[select.selectedIndex].getAttribute('data-name'); let area = decodeURIComponent(encArea); let details = decodeURIComponent(encDetails);
-            let msg = `🌟 عميلنا العزيز،\nتم إسناد طلبك للمندوب: ${driverName} 🛵\n\n📦 *تفاصيل طلبك:*\n🔢 رقم الطلب: ${orderId}\n📞 رقم الزبون: ${phone}\n📍 مكان التوصيل: ${area}\n🛍️ تفاصيل الطلبية: ${details}\n\nيمكنك تتبع الطلب من المنصة الآن!`;
-            window.open(`https://wa.me/968${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+            let driverName = select.options[select.selectedIndex].getAttribute('data-name'); 
             fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_status', orderId: orderId, newStatus: 'تم الإسناد للمندوب', driverId: select.value, driverName: driverName }) }).then(() => fetchAdminData());
         }
 
