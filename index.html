@@ -622,12 +622,27 @@
             }
         }
 
-        function assignOrder(orderId, phone, encArea, encDetails, event) {
-            const select = document.getElementById(`driver-select-${orderId}`); if(!select.value) { alert('اختر مندوب!'); return; }
-            event.target.innerText = 'جاري الإسناد...';
-            let driverName = select.options[select.selectedIndex].getAttribute('data-name'); 
-            fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_status', orderId: orderId, newStatus: 'تم الإسناد للمندوب', driverId: select.value, driverName: driverName }) }).then(() => fetchAdminData());
-        }
+       function assignOrder(orderId, phone, encArea, encDetails, event) {
+    const select = document.getElementById(`driver-select-${orderId}`); 
+    if(!select.value) { alert('اختر مندوب!'); return; }
+    event.target.innerText = 'جاري الإسناد...';
+    let driverName = select.options[select.selectedIndex].getAttribute('data-name'); 
+    
+    // إرسال الطلب مع التأكد من وجود المعرف والاسم
+    fetch(SCRIPT_URL, { 
+        method: 'POST', 
+        body: JSON.stringify({ 
+            action: 'update_status', 
+            orderId: orderId, 
+            newStatus: 'تم الإسناد للمندوب', 
+            driverId: select.value, 
+            driverName: driverName 
+        }) 
+    }).then(() => {
+        alert('تم الإسناد وإرسال التنبيهات آلياً للمندوب والزبون ✅');
+        fetchAdminData();
+    });
+}
 
         function renderCharts(orders, drivers) {
             let pCount = 0, iCount = 0, dCount = 0;
