@@ -514,7 +514,7 @@
                         `;
                         setTimeout(() => { startDriverGPS(order.id); }, 1000);
                     }
-                    container.innerHTML += `<div style="border:1px solid #ddd; padding:15px; border-radius:8px; margin-bottom:15px;"><h4 style="margin-top:0; color:var(--primary-gold);">طلب: ${order.id}</h4><p style="margin:5px 0;"><strong>من:</strong> ${order.pickup} | <strong>إلى:</strong> ${order.area}</p>${actionsHtml}</div>`;
+                    container.innerHTML += `<div style="border:1px solid #ddd; padding:15px; border-radius:8px; margin-bottom:15px;"><h4 style="margin-top:0; color:var(--primary-gold);">طلب: ${order.id}</h4><p style="margin:5px 0;"><strong>من:</strong> ${order.pickup} | <strong>إلى:</strong> ${order.area}</p><p style="margin:5px 0; color:#555;"><strong>التفاصيل:</strong> ${order.details}</p>${actionsHtml}</div>`;
                 });
             });
         }
