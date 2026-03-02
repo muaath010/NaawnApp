@@ -66,9 +66,39 @@
         .cash-box { background: #fdfaf0; border: 1px solid var(--primary-gold); padding: 15px; border-radius: 8px; margin-bottom: 15px;}
         .driver-price-input { border: 2px solid #28a745; background: #f8fff9; text-align: center; font-weight: bold; font-size: 18px; margin-bottom: 5px; }
         .feedback-box { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-top: 20px; }
+        /* تصميم النافذة الترحيبية */
+.welcome-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+.welcome-content { background: #fff; width: 100%; max-width: 450px; max-height: 85vh; overflow-y: auto; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; }
+.welcome-content h2 { color: var(--primary-gold); margin-top: 0; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+.welcome-content h4 { color: #333; margin-bottom: 5px; }
+.welcome-content p, .welcome-content li { font-size: 14px; color: #555; line-height: 1.6; }
+.welcome-content ul { padding-right: 20px; }
+.btn-understand { background: var(--primary-gold); color: white; width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 20px; cursor: pointer; }
+.btn-understand:hover { background: var(--dark-gold); }
     </style>
 </head>
 <body>
+    <div id="welcome-modal" class="welcome-modal hidden">
+        <div class="welcome-content">
+            <h2>مرحباً بك في نعاون 🚀</h2>
+            <p style="text-align: center; font-weight: bold;">دليلك السريع لاستخدام المنصة:</p>
+            
+            <h4>📱 للعملاء (طالبي الخدمة):</h4>
+            <ul>
+                <li>سجل برقم هاتفك للبدء.</li>
+                <li>اكتب منطقتك واسم المحل وتفاصيل طلبك.</li>
+                <li>تتبع المندوب مباشرة على الخريطة عند استلامه لطلبك!</li>
+            </ul>
+
+            <h4>🏪 للمطاعم والتُجّار:</h4>
+            <ul>
+                <li>من أسفل الشاشة، اختر (التُجّار).</li>
+                <li>سجل دخولك، واطلب مناديب لزبائنك بضغطة زر.</li>
+            </ul>
+
+            <button class="btn-understand" onclick="closeWelcomeGuide()">قرأت الدليل، ابدأ الآن ✅</button>
+        </div>
+    </div>
 
     <div class="header"><img src="https://i.imgur.com/OqQuD0p.png" alt="شعار نعاون">فريق نعاون لخدمات التوصيل</div>
     
@@ -260,6 +290,9 @@
         if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW fail: ', err)); }); }
 
         window.addEventListener('DOMContentLoaded', () => {
+            if (!localStorage.getItem('hasSeenGuide')) {
+                document.getElementById('welcome-modal').classList.remove('hidden');
+            }
             loadSettings(); 
             if (localStorage.getItem('adminLogged') === 'true') { showSection('admin-dashboard'); startAdminAutoRefresh(); }
             else if (localStorage.getItem('driverId')) { 
@@ -283,7 +316,10 @@
         }
 
         function logout() { if(confirm("تسجيل الخروج؟")) { localStorage.clear(); if(watchId && navigator.geolocation) navigator.geolocation.clearWatch(watchId); stopAdminAutoRefresh(); showSection('customer-login'); } }
-
+        function closeWelcomeGuide() {
+    localStorage.setItem('hasSeenGuide', 'true');
+    document.getElementById('welcome-modal').classList.add('hidden');
+}
         function calculateDistance(lat1, lon1, lat2, lon2) {
             if(!lat1 || !lon1 || !lat2 || !lon2) return null; const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
