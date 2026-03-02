@@ -223,6 +223,13 @@
 
         <div id="admin-dashboard" class="card section hidden">
             <h3>إدارة العمليات والمناديب</h3>
+            <h4 class="section-title">⚙️ إعدادات النظام السريعة</h4>
+            <div style="background: #fdfaf0; border: 1px solid var(--primary-gold); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <label style="font-size: 14px; color: #666; font-weight: bold;">📱 تغيير رقم واتساب الإدارة (المناوب الحالي):</label>
+                <input type="tel" id="admin-notify-phone" placeholder="أدخل رقم هاتف المناوب الجديد">
+                <button onclick="changeAdminPhone(event)" style="background: #333; margin-top: 5px;">حفظ الرقم واعتماده 💾</button>
+            </div>
+            
             <div class="auto-refresh-indicator">🟢 يتم التحديث تلقائياً كل 5 ثوانٍ</div>
             
             <div class="search-box">
@@ -648,6 +655,25 @@
                     if(data.status === 'success') { alert(`✅ تم إغلاق اليوم بنجاح!\nتم نقل (${data.archivedCount}) طلب إلى الأرشيف.`); fetchAdminData(); }
                 }).finally(() => { document.querySelector('button[onclick="archiveCompletedOrders()"]').innerText = "🗄️ إغلاق اليوم وأرشفة الطلبات المكتملة"; });
             }
+        }
+        function changeAdminPhone(event) {
+            let newPhone = document.getElementById('admin-notify-phone').value;
+            if(!newPhone) { alert("الرجاء إدخال رقم الإدارة الجديد"); return; }
+            
+            let btn = event.target;
+            btn.innerText = "جاري الحفظ... ⏳";
+            btn.disabled = true;
+            
+            fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_admin_phone', phone: newPhone }) })
+            .then(res => res.json()).then(data => {
+                if(data.status === 'success') { 
+                    alert('✅ تم تحديث رقم الإدارة المناوبة بنجاح! سيتم إرسال إشعارات الطلبات الجديدة لهذا الرقم من الآن فصاعداً.'); 
+                    document.getElementById('admin-notify-phone').value = ''; 
+                }
+            }).finally(() => { 
+                btn.innerText = "حفظ الرقم واعتماده 💾"; 
+                btn.disabled = false; 
+            });
         }
 
         function autoAssignOrder(orderId, phone, encArea, encDetails) {
