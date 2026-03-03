@@ -120,7 +120,22 @@
             <button onclick="showSection('vendor-login')" style="background: #333; margin-top: 0;">تسجيل دخول التُجّار 🏪</button>
         
         </div>
-
+        <div id="join-driver" class="card section hidden">
+            <button class="btn-back" onclick="showSection('customer-login')">🔙 العودة للرئيسية</button>
+            <div style="text-align: center;"><img src="https://i.imgur.com/OqQuD0p.png" style="width: 80px; border-radius: 10px; margin-bottom:10px;"></div>
+            <h3 style="color:var(--primary-gold); text-align:center; margin-top:0;">الالتحاق بأسطول نعاون 🛵</h3>
+            <p style="text-align:center; font-size:14px; color:#666;">سجل بياناتك وسنتواصل معك قريباً لضمك للفريق</p>
+            
+            <input type="text" id="jd-name" placeholder="الاسم الثلاثي">
+            <input type="tel" id="jd-phone" placeholder="رقم الواتساب (مثال: 9XXXXXXX)">
+            <input type="text" id="jd-area" placeholder="الولاية / المنطقة">
+            <select id="jd-car">
+                <option value="">نوع المركبة...</option>
+                <option value="سيارة خاصة">سيارة خاصة 🚗</option>
+                
+            </select>
+            <button onclick="submitDriverApplication(event)">إرسال طلب الالتحاق 🚀</button>
+        </div>
         <div id="customer-dashboard" class="card section hidden">
             <h3>مرحباً بك في لوحة تحكمك 🌟</h3>
             <button onclick="checkMyOrder()" style="background-color: #17a2b8;">تحديث حالة طلبي وتتبعه 🔄</button>
@@ -266,9 +281,12 @@
     </div>
 
     <div class="footer" id="main-footer">
-        <span onclick="showSection('vendor-login')">التُجّار والمطاعم</span> | 
+         
         <span onclick="showSection('driver-login')">الموظفين</span> | 
         <span onclick="showSection('admin-login')">الإدارة</span>
+        <div style="margin-top: 15px;">
+            <span onclick="showSection('join-driver')" style="font-size: 13px; color: var(--dark-gold); text-decoration: underline; cursor: pointer; font-weight: bold;">هل ترغب بالانضمام إلينا كمندوب توصيل؟ اضغط هنا 🛵</span>
+        </div>
         
         <div style="margin-top: 15px; font-size: 12px; color: #888; font-weight: bold;">&copy; جميع الحقوق محفوظة لفريق نعاون لخدمات التوصيل 2026</div>
     </div>
@@ -276,7 +294,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // ⚠️ ضع رابط جوجل شيت الخاص بك هنا
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDTLqNGoCB8LATzraLRUFRCa9V239gY39jFmmzGbUOsoJ_Rax2fCMNK-iOtwmxbx6N/exec'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzJwbARP0XvjBRhBtxw66J0IfUPs81XqLJNj7mpxudnftz9-JkYDHA0V6iLTAlbw0Wg/exec'; 
 
         let watchId; let adminRefreshInterval; 
         let tempCustLat = null; let tempCustLng = null; let activePromoCode = "";
@@ -446,6 +464,29 @@
                     showSection('vendor-dashboard'); fetchVendorOrders(); 
                 } else alert('بيانات التاجر غير صحيحة!');
             }).finally(() => { btn.innerText = 'دخول التاجر'; btn.disabled = false; });
+        }
+        function submitDriverApplication(event) {
+            let payload = { action: 'submit_driver_app' };
+            payload.name = document.getElementById('jd-name').value;
+            payload.phone = document.getElementById('jd-phone').value;
+            let area = document.getElementById('jd-area').value;
+            let car = document.getElementById('jd-car').value;
+            
+            if(!payload.name || !payload.phone || !area || !car) { alert("الرجاء تعبئة كافة البيانات"); return; }
+            payload.details = "المنطقة: " + area + " | المركبة: " + car;
+            
+            let btn = event.target;
+            btn.innerText = "جاري الإرسال... ⏳";
+            btn.disabled = true;
+            
+            fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
+            .then(res => res.json()).then(data => {
+                if(data.status === 'success') {
+                    alert('✅ تم استلام طلبك بنجاح! سنتواصل معك قريباً.');
+                    showSection('customer-login');
+                    document.getElementById('jd-name').value=''; document.getElementById('jd-phone').value=''; document.getElementById('jd-area').value=''; document.getElementById('jd-car').value='';
+                }
+            }).finally(() => { btn.innerText = "إرسال طلب الالتحاق 🚀"; btn.disabled = false; });
         }
 
         function fetchVendorOrders() {
